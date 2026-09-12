@@ -10,7 +10,9 @@ services:
     # If the free plan rejects it, change to: oregon
     region: singapore
     branch: main
-    buildCommand: npm ci && npm run build
+    # NODE_ENV=production makes npm skip devDependencies, and vite lives there,
+    # so dev deps must be forced in for the build step.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npx tsx server/index.ts
     healthCheckPath: /api/health
     autoDeploy: true
