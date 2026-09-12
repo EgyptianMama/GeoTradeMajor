@@ -1,0 +1,51 @@
+/* Design tokens transcribed from the reference Finance dashboard's :root block. */
+:root {
+  --bg: #0a0a0a;
+  --bg-secondary: #111;
+  --surface: #141414;
+  --surface-hover: #1e1e1e;
+  --surface-active: #1a1a2e;
+  --border: #2a2a2a;
+  --border-strong: #444;
+  --border-subtle: #1a1a1a;
+  --text: #e8e8e8;
+  --text-secondary: #ccc;
+  --text-dim: #888;
+  --text-muted: #838383;
+  --text-faint: #7f7f7f;
+  --text-ghost: #666;
+  --accent: #fff;
+  --overlay-subtle: rgba(255, 255, 255, 0.03);
+  --overlay-light: rgba(255, 255, 255, 0.05);
+  --overlay-medium: rgba(255, 255, 255, 0.1);
+  --overlay-heavy: rgba(255, 255, 255, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --scrollbar-thumb: #333;
+  --input-bg: #1a1a1a;
+  --panel-bg: #141414;
+  --map-country: #0a2018;
+
+  --semantic-critical: #ff4444;
+  --semantic-high: #ff8800;
+  --semantic-elevated: #ffaa00;
+  --semantic-normal: #44aa44;
+  --semantic-info: #3b82f6;
+  --threat-critical: #ef4444;
+  --threat-high: #f97316;
+  --threat-medium: #eab308;
+  --threat-low: #22c55e;
+  --status-live: #44ff88;
+  --status-cached: #ffaa00;
+
+  --red: #ff4444;
+  --red-strong: #d62b2b;
+  --green: #44ff88;
+  --yellow: #ffaa00;
+
+  --font-mono: "SF Mono", "Monaco", "Cascadia Code", "Fira Code",
+    "DejaVu Sans Mono", "Liberation Mono", monospace;
+
+  --dashboard-panel-row-min: 200px;
+  --dashboard-panel-row-max: 380px;
+  --dashboard-grid-gap: 4px;
+}

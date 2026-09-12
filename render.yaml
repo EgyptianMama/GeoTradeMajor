@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: geotrade
+    runtime: node
+    plan: free
+    region: singapore          # closest to the Indian publishers we poll
+    buildCommand: npm ci && npm run build
+    startCommand: npx tsx server/index.ts
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"

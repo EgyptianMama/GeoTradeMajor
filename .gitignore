@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# report build artifacts (regenerable: node build/figures.cjs && node build/build-docx.cjs)
+build/fig/
+build/pages/
+build/unz/
+
+# local preview scratch
+_view.html
+*.log
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

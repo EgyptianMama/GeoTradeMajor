@@ -1,0 +1,1729 @@
+<title>GeoTrade Signal Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  /* ============================================================
+     GeoTrade — Technical Design Report
+     Palette: indigo ink on cool paper. Amber carries attention;
+     green/red are reserved strictly for return direction, which is
+     semantic in this domain rather than decorative.
+     ============================================================ */
+
+  :root {
+    --paper:        #f4f6f9;
+    --surface:      #ffffff;
+    --surface-alt:  #eef1f6;
+    --ink:          #16202e;
+    --ink-soft:     #35435a;
+    --muted:        #5c6a7d;
+    --faint:        #8a96a7;
+    --rule:         #d5dce6;
+    --rule-strong:  #b6c1d0;
+
+    --indigo:       #2d4a7c;
+    --indigo-deep:  #1b2f52;
+    --indigo-wash:  #e6ecf6;
+
+    --amber:        #a96c12;
+    --amber-wash:   #f7edda;
+
+    --up:           #17765a;
+    --down:         #a83239;
+
+    --code-bg:      #eff2f7;
+    --code-ink:     #1f2c40;
+
+    --shadow:       0 1px 2px rgba(22, 32, 46, .06), 0 8px 24px rgba(22, 32, 46, .05);
+
+    --measure: 68ch;
+    --f-display: "Spectral", Georgia, "Times New Roman", serif;
+    --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:        #0e141d;
+      --surface:      #151d29;
+      --surface-alt:  #1b2532;
+      --ink:          #dfe6ef;
+      --ink-soft:     #b9c4d3;
+      --muted:        #8e9cb0;
+      --faint:        #6b7889;
+      --rule:         #273244;
+      --rule-strong:  #3a475d;
+
+      --indigo:       #85a9df;
+      --indigo-deep:  #a9c3ec;
+      --indigo-wash:  #1a2740;
+
+      --amber:        #d8a44b;
+      --amber-wash:   #2c2415;
+
+      --up:           #3fc48c;
+      --down:         #e2696f;
+
+      --code-bg:      #131b26;
+      --code-ink:     #cfd9e6;
+
+      --shadow:       0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:        #0e141d;
+    --surface:      #151d29;
+    --surface-alt:  #1b2532;
+    --ink:          #dfe6ef;
+    --ink-soft:     #b9c4d3;
+    --muted:        #8e9cb0;
+    --faint:        #6b7889;
+    --rule:         #273244;
+    --rule-strong:  #3a475d;
+
+    --indigo:       #85a9df;
+    --indigo-deep:  #a9c3ec;
+    --indigo-wash:  #1a2740;
+
+    --amber:        #d8a44b;
+    --amber-wash:   #2c2415;
+
+    --up:           #3fc48c;
+    --down:         #e2696f;
+
+    --code-bg:      #131b26;
+    --code-ink:     #cfd9e6;
+
+    --shadow:       0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------------------------------------------------- title page */
+
+  .titlepage {
+    background: var(--surface);
+    border-bottom: 3px double var(--rule-strong);
+    padding: clamp(48px, 9vw, 108px) clamp(20px, 6vw, 72px) clamp(40px, 6vw, 64px);
+  }
+
+  .titlepage-inner { max-width: 980px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    margin: 0 0 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+  }
+  .eyebrow span::after { content: ""; }
+  .eyebrow .sep { color: var(--faint); }
+
+  .titlepage h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(38px, 7.2vw, 74px);
+    line-height: 1.04;
+    letter-spacing: -.02em;
+    margin: 0 0 10px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .subtitle {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-size: clamp(18px, 2.6vw, 25px);
+    line-height: 1.35;
+    color: var(--ink-soft);
+    margin: 0 0 40px;
+    max-width: 34ch;
+  }
+
+  .rule-accent {
+    width: 76px; height: 4px;
+    background: var(--indigo);
+    margin: 0 0 36px;
+  }
+
+  .docmeta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    border-left: 1px solid var(--rule);
+  }
+  .docmeta div {
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 14px;
+  }
+  .docmeta dt {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 4px;
+  }
+  .docmeta dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* ------------------------------------------------------- layout */
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(20px, 5vw, 48px) 120px;
+  }
+
+  .report-grid {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: start;
+  }
+
+  @media (max-width: 940px) {
+    .report-grid { grid-template-columns: minmax(0, 1fr); }
+    .toc { position: static !important; max-height: none !important; }
+  }
+
+  /* ---------------------------------------------------------- TOC */
+
+  .toc {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 28px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .toc h2 {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .toc a {
+    color: var(--muted);
+    text-decoration: none;
+    display: block;
+    padding: 3px 8px 3px 0;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+    transition: color .15s, border-color .15s;
+  }
+  .toc a:hover, .toc a:focus-visible { color: var(--indigo); border-left-color: var(--indigo); }
+  .toc .num { font-family: var(--f-mono); font-size: 11px; color: var(--faint); margin-right: 7px; }
+  .toc .sub { padding-left: 26px; font-size: 12px; }
+
+  /* ------------------------------------------------------ content */
+
+  main { padding-top: 28px; min-width: 0; }
+
+  section { margin-bottom: 68px; scroll-margin-top: 24px; }
+
+  h2.sec {
+    font-family: var(--f-display);
+    font-size: clamp(26px, 3.6vw, 35px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.015em;
+    margin: 0 0 6px;
+    padding-top: 20px;
+    border-top: 2px solid var(--indigo);
+    text-wrap: balance;
+  }
+  h2.sec .num {
+    display: block;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    color: var(--indigo);
+    margin-bottom: 8px;
+  }
+
+  h3 {
+    font-family: var(--f-display);
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 38px 0 10px;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  h3 .num { font-family: var(--f-mono); font-size: 13px; color: var(--indigo); margin-right: 9px; font-weight: 500; }
+
+  h4 {
+    font-family: var(--f-body);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    margin: 26px 0 8px;
+    color: var(--ink-soft);
+  }
+
+  p { margin: 0 0 16px; max-width: var(--measure); color: var(--ink-soft); }
+  main > section > p:first-of-type { color: var(--ink); }
+
+  a { color: var(--indigo); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+  ul, ol.body { max-width: var(--measure); margin: 0 0 18px; padding-left: 22px; color: var(--ink-soft); }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--indigo); }
+
+  strong { color: var(--ink); font-weight: 600; }
+  em.term { font-style: normal; font-family: var(--f-mono); font-size: .92em; color: var(--indigo-deep); }
+
+  code {
+    font-family: var(--f-mono);
+    font-size: .87em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ------------------------------------------------------- blocks */
+
+  .callout {
+    border-left: 3px solid var(--amber);
+    background: var(--amber-wash);
+    padding: 14px 18px;
+    margin: 0 0 22px;
+    max-width: var(--measure);
+    font-size: 15px;
+  }
+  .callout p { margin-bottom: 0; color: var(--ink-soft); }
+  .callout .label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+
+  .abstract {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--indigo);
+    padding: 24px 26px;
+    margin: 0 0 46px;
+    box-shadow: var(--shadow);
+  }
+  .abstract h2 {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    margin: 0 0 12px;
+  }
+  .abstract p { font-size: 15.5px; max-width: none; }
+  .abstract p:last-child { margin-bottom: 0; }
+
+  /* ----------------------------------------------------- formulas */
+
+  .formula {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 18px 20px;
+    margin: 0 0 8px;
+    overflow-x: auto;
+  }
+  .formula .expr {
+    font-family: var(--f-display);
+    font-size: 18px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .formula .expr i { font-style: italic; }
+  .formula .eqno {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+  .where {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0 0 24px;
+    max-width: var(--measure);
+    padding-left: 20px;
+  }
+  .where b { font-family: var(--f-mono); font-size: .95em; font-weight: 500; color: var(--ink-soft); }
+
+  /* -------------------------------------------------------- table */
+
+  .table-wrap { overflow-x: auto; margin: 0 0 10px; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 560px; }
+  caption {
+    caption-side: bottom;
+    text-align: left;
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 10px 2px 0;
+  }
+  caption b { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--indigo); font-weight: 600; }
+  th, td { padding: 9px 13px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.mono, th.mono { font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.up { color: var(--up); font-weight: 600; }
+  td.down { color: var(--down); font-weight: 600; }
+
+  /* --------------------------------------------------------- code */
+
+  .listing { margin: 0 0 10px; border: 1px solid var(--rule); background: var(--code-bg); }
+  .listing-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-alt);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .listing-head .lang { color: var(--indigo); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .listing pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+  .listing code {
+    background: none;
+    padding: 0;
+    font-size: 12.6px;
+    line-height: 1.62;
+    color: var(--code-ink);
+    display: block;
+  }
+  .cmt { color: var(--faint); font-style: italic; }
+  .kw  { color: var(--indigo); font-weight: 600; }
+  .str { color: var(--up); }
+
+  /* ------------------------------------------------------ figures */
+
+  figure { margin: 0 0 12px; }
+  figure svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 18px;
+  }
+  figcaption {
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 10px 2px 0;
+    max-width: var(--measure);
+  }
+  figcaption b { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--indigo); font-weight: 600; }
+
+  .fig-scroll { overflow-x: auto; }
+
+  /* --------------------------------------------------- references */
+
+  ol.refs { list-style: none; counter-reset: r; padding: 0; max-width: none; }
+  ol.refs li {
+    counter-increment: r;
+    position: relative;
+    padding: 16px 0 16px 46px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  ol.refs li::before {
+    content: "[" counter(r) "]";
+    position: absolute;
+    left: 0; top: 16px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--indigo);
+    font-weight: 600;
+  }
+  ol.refs .title { color: var(--ink); font-weight: 600; }
+  ol.refs .venue { font-style: italic; }
+  ol.refs .why {
+    display: block;
+    margin-top: 7px;
+    font-size: 13.5px;
+    color: var(--muted);
+    border-left: 2px solid var(--rule-strong);
+    padding-left: 12px;
+  }
+  ol.refs .why b { color: var(--indigo); font-weight: 600; }
+
+  /* --------------------------------------------------- phase list */
+
+  .phases { display: grid; gap: 2px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 12px; }
+  .phase { background: var(--surface); padding: 16px 18px; display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 18px; }
+  @media (max-width: 620px) { .phase { grid-template-columns: minmax(0,1fr); gap: 6px; } }
+  .phase .tag {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    font-weight: 600;
+    padding-top: 2px;
+  }
+  .phase h4 { margin: 0 0 5px; font-size: 15px; color: var(--ink); }
+  .phase p { margin: 0; font-size: 14px; max-width: none; }
+  .phase .gate {
+    display: inline-block;
+    margin-top: 9px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-wash);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  hr.soft { border: none; border-top: 1px solid var(--rule); margin: 34px 0; max-width: var(--measure); }
+
+  .footer-note {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 3px double var(--rule-strong);
+    font-size: 13px;
+    color: var(--muted);
+    max-width: var(--measure);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="titlepage">
+  <div class="titlepage-inner">
+    <p class="eyebrow">
+      <span>Technical Design Report</span>
+      <span class="sep">/</span>
+      <span>Rev 1.0</span>
+      <span class="sep">/</span>
+      <span>NSE &amp; BSE Equities</span>
+    </p>
+    <h1>GeoTrade</h1>
+    <p class="subtitle">A news-sentiment signal architecture for multi-day equity movement on Indian markets.</p>
+    <div class="rule-accent"></div>
+
+    <dl class="docmeta">
+      <div><dt>Document</dt><dd>GT-TDR-001</dd></div>
+      <div><dt>Revision</dt><dd>1.0 — Draft</dd></div>
+      <div><dt>Scope</dt><dd>India cash equities</dd></div>
+      <div><dt>Horizon</dt><dd>1–5 trading days</dd></div>
+      <div><dt>Classification</dt><dd>Personal research</dd></div>
+      <div><dt>Status</dt><dd>For build</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="report-grid">
+
+    <nav class="toc" aria-label="Table of contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#s1"><span class="num">1</span>Introduction</a></li>
+        <li><a href="#s2"><span class="num">2</span>Literature Review</a></li>
+        <li><a href="#s3"><span class="num">3</span>System Architecture</a></li>
+        <li><a href="#s4"><span class="num">4</span>Data Layer</a></li>
+        <li><a href="#s5"><span class="num">5</span>Entity Resolution</a></li>
+        <li><a href="#s6"><span class="num">6</span>Sentiment &amp; Surprise</a></li>
+        <li><a href="#s7"><span class="num">7</span>Feature Parameters</a></li>
+        <li><a href="#s8"><span class="num">8</span>Label Construction</a></li>
+        <li><a href="#s9"><span class="num">9</span>Model Stack</a></li>
+        <li><a href="#s10"><span class="num">10</span>Validation Protocol</a></li>
+        <li><a href="#s11"><span class="num">11</span>Evaluation Metrics</a></li>
+        <li><a href="#s12"><span class="num">12</span>Implementation Roadmap</a></li>
+        <li><a href="#s13"><span class="num">13</span>Risks &amp; Limitations</a></li>
+        <li><a href="#s14"><span class="num">14</span>Regulatory Position</a></li>
+        <li><a href="#refs"><span class="num">A</span>References</a></li>
+        <li><a href="#notation"><span class="num">B</span>Notation</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <div class="abstract">
+        <h2>Abstract</h2>
+        <p>GeoTrade is a research system that ingests Indian financial news in near real time, resolves the securities each story concerns, scores the story's directional content, and predicts abnormal returns for those securities over a one-to-five trading day horizon. This report specifies the data layer, the entity-resolution and sentiment stack, the feature set, the labelling methodology, the model ladder, and the validation protocol.</p>
+        <p>The central design commitment is that <strong>the system is measured before it is believed</strong>. Every component exists to feed a walk-forward event study whose output is a market-adjusted information coefficient. Where the literature and the market structure suggest an effect is unlikely to survive at the latency available to a free-data system, the report says so explicitly rather than designing around the inconvenience.</p>
+      </div>
+
+      <!-- ===================================================== 1 -->
+      <section id="s1">
+        <h2 class="sec"><span class="num">Section 1</span>Introduction</h2>
+
+        <h3><span class="num">1.1</span>Background</h3>
+        <p>Public equity prices respond to information. When new information about a company reaches the market — an earnings release, a regulatory order, a contract win, a commodity shock in its input chain — the price adjusts. The speed and completeness of that adjustment is the subject of a large empirical literature, and it is not uniform: adjustment is close to instantaneous for heavily covered securities and demonstrably slower for thinly covered ones.</p>
+        <p>India is an unusually good venue for this question. The NSE lists over two thousand securities, but sell-side analyst coverage concentrates in the top decile. Below that, price discovery is slower, retail participation is proportionally higher, and the informational gap between a story being published and being priced is wider. That gap is the only place a system built on publicly available news can plausibly find an edge.</p>
+
+        <h3><span class="num">1.2</span>Problem Statement</h3>
+        <p>Given a stream of Indian financial news items, each arriving at time <em class="term">t</em>, produce for every affected listed security a directional prediction of its <strong>market-adjusted</strong> return over the window <em class="term">[t+1, t+5]</em> trading days, together with a calibrated confidence.</p>
+        <p>Three properties distinguish this from generic sentiment classification:</p>
+        <ul>
+          <li><strong>The target is abnormal, not absolute.</strong> A stock rising 0.8% on a day the index rises 1.2% has fallen in the only sense that matters. Raw-return labelling silently rewards beta exposure and will report a false edge.</li>
+          <li><strong>The predictor is surprise, not tone.</strong> For anticipated events, price responds to the deviation from consensus, not to the absolute favourability of the news. A record profit that misses expectations is a negative event.</li>
+          <li><strong>The unit of prediction is a security, not a document.</strong> One story maps to many securities with different magnitudes and, occasionally, opposite signs — a crude oil spike is positive for an upstream producer and negative for a refiner.</li>
+        </ul>
+
+        <h3><span class="num">1.3</span>Objectives</h3>
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 1.1</b> — Project objectives and their acceptance criteria.</caption>
+            <thead>
+              <tr><th class="mono">ID</th><th>Objective</th><th>Acceptance criterion</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">O1</td><td>Ingest and normalise Indian market news and exchange filings</td><td>≥ 95% uptime; median end-to-end latency under 120 s from publication</td></tr>
+              <tr><td class="mono">O2</td><td>Resolve mentioned entities to NSE ticker symbols</td><td>≥ 0.90 precision, ≥ 0.75 recall on a 500-headline hand-labelled set</td></tr>
+              <tr><td class="mono">O3</td><td>Score directional content per (story, security) pair</td><td>Calibrated 3-class output; Brier score better than a majority-class baseline</td></tr>
+              <tr><td class="mono">O4</td><td>Predict 5-day abnormal return direction</td><td>Rank IC &gt; 0.03 out-of-sample, stable across ≥ 3 walk-forward folds</td></tr>
+              <tr><td class="mono">O5</td><td>Quantify where the edge lives</td><td>IC reported by market-cap decile, liquidity bucket and event category</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span class="num">1.4</span>Scope and Non-Goals</h3>
+        <p><strong>In scope.</strong> Indian cash equities listed on NSE and BSE; English-language news and exchange filings; a one-to-five trading day prediction horizon; daily-frequency price data.</p>
+        <p><strong>Explicitly out of scope.</strong> Intraday and high-frequency prediction; order execution and position sizing; derivatives and options strategy; non-Indian markets; vernacular-language news in Rev 1.0; any form of published investment recommendation to third parties.</p>
+
+        <div class="callout">
+          <span class="label">Design constraint</span>
+          <p>Intraday prediction is excluded on structural grounds, not scope-cutting. At the latency of public RSS and filing feeds — seconds to minutes behind institutional terminals — the system cannot compete on speed for liquid names. The multi-day horizon shifts the contest from latency to interpretation, which is the only contest this architecture can win.</p>
+        </div>
+
+        <h3><span class="num">1.5</span>Document Structure</h3>
+        <p>Section 2 reviews the five papers that most directly shape the design. Section 3 gives the system architecture. Sections 4 through 7 specify the pipeline bottom-up: data, entity resolution, sentiment, and the resulting feature vector. Section 8 defines the prediction target with full event-study treatment. Sections 9 through 11 cover modelling, validation, and evaluation. Sections 12 to 14 address delivery, risk, and regulatory position.</p>
+      </section>
+
+      <!-- ===================================================== 2 -->
+      <section id="s2">
+        <h2 class="sec"><span class="num">Section 2</span>Literature Review</h2>
+        <p>Five papers carry most of the design weight. Each is summarised with the specific decision it drives.</p>
+
+        <h3><span class="num">2.1</span>Domain-specific lexicons — Loughran &amp; McDonald (2011)</h3>
+        <p>The foundational result for financial text: general-purpose sentiment dictionaries misclassify financial language at a rate that invalidates their use. Words such as <em class="term">liability</em>, <em class="term">cost</em>, <em class="term">tax</em>, <em class="term">capital</em> and <em class="term">depreciation</em> are negative in the Harvard IV-4 psychosocial dictionary and neutral in a financial filing. The authors construct a finance-specific word list from 10-K filings and show it produces materially different — and better-behaved — associations with returns.</p>
+        <p><strong>Design consequence.</strong> The keyword lexicon in the current GeoTrade prototype is a placeholder and must be retired. It carries exactly the failure mode this paper documents. Any lexicon component that survives into production uses the Loughran–McDonald word lists, extended with an India-specific supplement (<em class="term">promoter pledge</em>, <em class="term">SEBI show-cause</em>, <em class="term">QIP</em>, <em class="term">bonus issue</em>, <em class="term">circuit</em>, <em class="term">ASM/GSM framework</em>).</p>
+
+        <h3><span class="num">2.2</span>Media sentiment and return dynamics — Tetlock (2007)</h3>
+        <p>Constructs a daily pessimism factor from a Wall Street Journal column and shows it predicts downward pressure on market prices followed by reversion to fundamentals, and that unusually high or low pessimism predicts elevated volume. The critical structural finding is the <strong>shape</strong> of the response: an initial drift in the direction of sentiment, followed by partial reversal.</p>
+        <p><strong>Design consequence.</strong> This directly justifies the multi-day horizon and warns against a single fixed window. GeoTrade labels at multiple horizons — <em class="term">[t+1,t+1]</em>, <em class="term">[t+1,t+3]</em>, <em class="term">[t+1,t+5]</em>, <em class="term">[t+1,t+10]</em> — and reports the full term structure, because a signal that is positive at three days and negative at ten is telling you something a single number hides.</p>
+
+        <h3><span class="num">2.3</span>Transformer sentiment for finance — Araci (2019), FinBERT</h3>
+        <p>Adapts BERT to financial text through further pre-training on a financial corpus and fine-tuning on the Financial PhraseBank. Outperforms lexicon methods and general-purpose neural baselines on financial sentiment classification, and — importantly for this project — handles negation, hedging and conditional constructions that bag-of-words approaches destroy.</p>
+        <p><strong>Design consequence.</strong> FinBERT is the Phase-2 sentiment encoder. It is used both as a 3-class classifier and, more valuably, as a frozen feature extractor: the pooled <em class="term">[CLS]</em> embedding becomes a 768-dimensional input to the gradient-boosted model described in Section 9, alongside the non-textual features.</p>
+
+        <h3><span class="num">2.4</span>Supervised sentiment from returns — Ke, Kelly &amp; Xiu (2019)</h3>
+        <p>Introduces SESTM (Sentiment Extraction via Screening and Topic Modeling). Rather than assuming which words are positive, it <strong>learns</strong> word sentiment from realised returns: screen for words predictive of returns, fit a two-topic model over the screened vocabulary, then score new documents by their positive-topic loading. The method is transparent, cheap, and avoids importing an analyst's prior about what "good news" means.</p>
+        <p><strong>Design consequence.</strong> This is the most important methodological paper for GeoTrade. It reframes sentiment from a language-modelling problem into a supervised-learning problem where the label is the abnormal return. A SESTM-style screened vocabulary is Phase-1 — it is implementable in a week, needs no GPU, and provides the baseline that FinBERT must beat to justify its cost.</p>
+
+        <h3><span class="num">2.5</span>Cross-stock propagation — Sawhney et al. (2020)</h3>
+        <p>Predicts stock movement from social-media text while explicitly modelling inter-stock relationships through a graph over company correlations, combining hierarchical attention over text with graph attention over the company network.</p>
+        <p><strong>Design consequence.</strong> This is the formal treatment of what GeoTrade's prototype does crudely with a hand-written sector map. One story about an auto manufacturer carries information about its suppliers, its sector peers, and its lenders. Phase 4 replaces the hand-coded propagation weights with a learned graph over an adjacency matrix built from return correlation, sector membership, and index co-membership.</p>
+
+        <div class="callout">
+          <span class="label">Verify before citing</span>
+          <p>These references are reproduced from memory and my training data ends in May 2026. Confirm exact titles, venues, years and identifiers against the publisher or arXiv before using them in any formal write-up. Two further papers worth reading, though not load-bearing here: Ding et al. (IJCAI 2015) on structured event embeddings, and Hu et al. (WSDM 2018) on hierarchical attention for news-driven trend prediction.</p>
+        </div>
+      </section>
+
+      <!-- ===================================================== 3 -->
+      <section id="s3">
+        <h2 class="sec"><span class="num">Section 3</span>System Architecture</h2>
+        <p>GeoTrade is a five-stage pipeline. Each stage writes to durable storage, so any stage can be replayed against historical data without re-running the ones before it. This is a hard requirement: the backtest in Section 10 depends on being able to re-score five years of archived text with a new model.</p>
+
+        <figure>
+          <div class="fig-scroll">
+            <svg viewBox="0 0 980 300" role="img" aria-label="Five-stage GeoTrade pipeline: ingestion writes raw documents to a store, entity resolution links them to tickers, scoring produces sentiment and surprise features, the feature store joins them with market data, and the model emits ranked predictions consumed by the dashboard and the backtester.">
+              <defs>
+                <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+                </marker>
+              </defs>
+
+              <!-- stage boxes -->
+              <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="14"  y="86" width="150" height="66" rx="3"/>
+                <rect x="214" y="86" width="150" height="66" rx="3"/>
+                <rect x="414" y="86" width="150" height="66" rx="3"/>
+                <rect x="614" y="86" width="150" height="66" rx="3"/>
+                <rect x="814" y="86" width="150" height="66" rx="3"/>
+              </g>
+
+              <g font-size="13" font-weight="600" text-anchor="middle" fill="currentColor">
+                <text x="89"  y="113">Ingestion</text>
+                <text x="289" y="113">Entity Link</text>
+                <text x="489" y="113">Scoring</text>
+                <text x="689" y="113">Feature Store</text>
+                <text x="889" y="113">Model</text>
+              </g>
+              <g font-size="11" text-anchor="middle" fill="currentColor" opacity=".72">
+                <text x="89"  y="132">RSS · filings</text>
+                <text x="289" y="132">text → ticker</text>
+                <text x="489" y="132">sentiment · surprise</text>
+                <text x="689" y="132">join market data</text>
+                <text x="889" y="132">rank + calibrate</text>
+              </g>
+
+              <!-- flow arrows -->
+              <g stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)">
+                <line x1="164" y1="119" x2="208" y2="119"/>
+                <line x1="364" y1="119" x2="408" y2="119"/>
+                <line x1="564" y1="119" x2="608" y2="119"/>
+                <line x1="764" y1="119" x2="808" y2="119"/>
+              </g>
+              <g font-size="10" text-anchor="middle" fill="currentColor" opacity=".62">
+                <text x="186" y="111">raw doc</text>
+                <text x="386" y="111">(doc, tkr)</text>
+                <text x="586" y="111">scores</text>
+                <text x="786" y="111">vectors</text>
+              </g>
+
+              <!-- persistence layer -->
+              <g fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity=".55">
+                <rect x="14" y="196" width="750" height="48" rx="3"/>
+              </g>
+              <text x="389" y="225" font-size="12" text-anchor="middle" fill="currentColor" opacity=".72">
+                Append-only document + score archive — every stage replayable
+              </text>
+              <g stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity=".55">
+                <line x1="89"  y1="152" x2="89"  y2="196"/>
+                <line x1="289" y1="152" x2="289" y2="196"/>
+                <line x1="489" y1="152" x2="489" y2="196"/>
+                <line x1="689" y1="152" x2="689" y2="196"/>
+              </g>
+
+              <!-- market data input -->
+              <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="614" y="16" width="150" height="44" rx="3"/>
+              </g>
+              <text x="689" y="35" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">Market Data</text>
+              <text x="689" y="51" font-size="10" text-anchor="middle" fill="currentColor" opacity=".72">EOD OHLCV · index</text>
+              <line x1="689" y1="60" x2="689" y2="82" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+              <!-- outputs -->
+              <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="814" y="196" width="150" height="42" rx="3"/>
+                <rect x="814" y="248" width="150" height="42" rx="3"/>
+              </g>
+              <text x="889" y="222" font-size="12" text-anchor="middle" fill="currentColor">Dashboard</text>
+              <text x="889" y="274" font-size="12" text-anchor="middle" fill="currentColor">Backtester</text>
+              <g stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)">
+                <line x1="889" y1="152" x2="889" y2="192"/>
+              </g>
+              <path d="M 889 238 L 889 244" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)" fill="none"/>
+            </svg>
+          </div>
+          <figcaption><b>Figure 3.1</b> — Pipeline stages and the persistence layer that makes each one replayable. The backtester consumes the same model output as the dashboard, which is what prevents live and historical behaviour from drifting apart.</figcaption>
+        </figure>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 3.1</b> — Stage responsibilities and technology selection.</caption>
+            <thead>
+              <tr><th>Stage</th><th>Responsibility</th><th>Technology</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Ingestion</td><td>Poll sources, deduplicate, normalise to a common document schema</td><td class="mono">Python · feedparser · httpx</td></tr>
+              <tr><td>Entity link</td><td>Detect organisation mentions, resolve to tickers with confidence</td><td class="mono">spaCy NER · RapidFuzz · sentence-transformers</td></tr>
+              <tr><td>Scoring</td><td>Sentiment, surprise proxy, novelty, salience</td><td class="mono">SESTM → FinBERT (HF transformers)</td></tr>
+              <tr><td>Feature store</td><td>Join text scores to market state; point-in-time correctness</td><td class="mono">DuckDB · Parquet · pandas</td></tr>
+              <tr><td>Model</td><td>Rank securities by predicted abnormal return</td><td class="mono">scikit-learn · LightGBM · PyTorch</td></tr>
+              <tr><td>Serving</td><td>REST API consumed by the existing React dashboard</td><td class="mono">FastAPI</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>DuckDB over Postgres is a deliberate choice for a single-operator research project: the entire workload is analytical, the data fits comfortably on one disk, and Parquet files are directly queryable without a running server. If the project ever needs concurrent writers, that decision gets revisited.</p>
+      </section>
+
+      <!-- ===================================================== 4 -->
+      <section id="s4">
+        <h2 class="sec"><span class="num">Section 4</span>Data Layer</h2>
+
+        <h3><span class="num">4.1</span>Source Hierarchy</h3>
+        <p>Sources are ranked by <strong>latency to the underlying fact</strong>, not by brand. An exchange filing is the event; a news article is a downstream description of it. Wherever a story type is reachable by filing, the filing is the primary source and the article is used only for corroboration and for the novelty count.</p>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 4.1</b> — Source tiers. Tier 1 sources are primary documents; tiers 2 and 3 are derivative and arrive later.</caption>
+            <thead>
+              <tr><th class="mono">Tier</th><th>Source</th><th>Content</th><th class="mono">Latency</th><th class="mono">Cred.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">1</td><td>NSE / BSE corporate announcements</td><td>Results, orders, pledges, board changes</td><td class="mono">Real time</td><td class="mono">99</td></tr>
+              <tr><td class="mono">1</td><td>RBI press releases</td><td>Policy, circulars, banking regulation</td><td class="mono">Real time</td><td class="mono">99</td></tr>
+              <tr><td class="mono">1</td><td>SEBI orders and circulars</td><td>Enforcement, market regulation</td><td class="mono">Real time</td><td class="mono">99</td></tr>
+              <tr><td class="mono">1</td><td>PIB / MoSPI</td><td>CPI, IIP, GDP, policy announcements</td><td class="mono">Scheduled</td><td class="mono">97</td></tr>
+              <tr><td class="mono">2</td><td>Mint, Business Standard, ET Markets</td><td>Interpretation, exclusives, analysis</td><td class="mono">Minutes–hours</td><td class="mono">85–88</td></tr>
+              <tr><td class="mono">2</td><td>Moneycontrol, NDTV Profit, BusinessLine</td><td>Market coverage, broker notes</td><td class="mono">Minutes–hours</td><td class="mono">80–85</td></tr>
+              <tr><td class="mono">3</td><td>Aggregators and syndication</td><td>Mostly duplicates of tier 2</td><td class="mono">Hours</td><td class="mono">60–75</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="label">Highest-leverage change from the prototype</span>
+          <p>The current build reads only tier 2. Adding NSE and BSE corporate announcements moves the system upstream of the journalists entirely for company-specific events, which is both a latency gain and a precision gain — a filing names the company unambiguously, eliminating the entity-resolution problem for the cleanest subset of events.</p>
+        </div>
+
+        <h3><span class="num">4.2</span>Document Schema</h3>
+        <p>Every source normalises to one record. The <code>content_hash</code> deduplicates syndicated copies; <code>cluster_id</code> groups distinct articles describing the same underlying event, which is what makes the novelty and velocity features in Section 7 computable.</p>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/schema.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime
+
+<span class="cmt">@dataclass(frozen=True)</span>
+<span class="kw">class</span> Document:
+    doc_id:        str        <span class="cmt"># stable hash of canonical URL</span>
+    source_id:     str        <span class="cmt"># 'nse_announce', 'mint_markets', ...</span>
+    tier:          int        <span class="cmt"># 1 primary, 2 press, 3 aggregator</span>
+    credibility:   float      <span class="cmt"># 0-100, per Table 4.1</span>
+    published_at:  datetime   <span class="cmt"># UTC, from the source</span>
+    ingested_at:   datetime   <span class="cmt"># UTC, our clock — needed for latency audit</span>
+    headline:      str
+    body:          str
+    url:           str
+    content_hash:  str        <span class="cmt"># exact-duplicate detection</span>
+    cluster_id:    str        <span class="cmt"># same-story grouping across publishers</span>
+    language:      str = <span class="str">"en"</span>
+</code></pre>
+        </div>
+
+        <p><code>ingested_at</code> is not redundant with <code>published_at</code>. The difference between them is the system's own latency, and it must be measured, because a backtest that assumes zero ingestion lag is a backtest with look-ahead bias baked in.</p>
+
+        <h3><span class="num">4.3</span>Market Data</h3>
+        <p>Daily OHLCV for the full NSE universe, plus NIFTY 50 and the relevant sectoral indices as market proxies, plus a corporate-actions table. Adjusted prices are mandatory — an unadjusted 1:5 split reads as an 80% single-day crash and will contaminate every label in its window.</p>
+      </section>
+
+      <!-- ===================================================== 5 -->
+      <section id="s5">
+        <h2 class="sec"><span class="num">Section 5</span>Entity Resolution</h2>
+
+        <h3><span class="num">5.1</span>Why This Is the Hard Part</h3>
+        <p>Sentiment analysis is a solved-enough problem with off-the-shelf models. Deciding <em>which listed security a sentence is about</em> is not, and it is where most of the achievable accuracy lives. Three failure modes dominate in the Indian market specifically:</p>
+        <ul>
+          <li><strong>Group ambiguity.</strong> "Tata" resolves to more than twenty listed entities. "Bajaj" resolves to Bajaj Finance, Bajaj Finserv, Bajaj Auto and Bajaj Holdings — four different businesses with different betas and sectors.</li>
+          <li><strong>Mention without aboutness.</strong> "Unlike Reliance, the company has no retail arm" mentions RELIANCE but is not about it. A naive matcher tags it and injects noise.</li>
+          <li><strong>Second-order subjects.</strong> "Crude crosses $95" names no listed company yet carries strong, opposite-signed information for ONGC and for BPCL.</li>
+        </ul>
+
+        <figure>
+          <div class="fig-scroll">
+            <svg viewBox="0 0 940 330" role="img" aria-label="Entity resolution flow: a headline passes through NER and alias matching to generate candidate tickers, a cross-encoder scores each candidate in context, a threshold rejects low-confidence links, and accepted links then expand through a propagation graph to sector peers and supply-chain counterparts.">
+              <defs>
+                <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+                </marker>
+              </defs>
+
+              <!-- input -->
+              <rect x="14" y="14" width="912" height="40" rx="3" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
+              <text x="30" y="39" font-size="13" fill="currentColor" font-style="italic">“Tata Motors JLR volumes miss estimates; brokerages cut targets on the auto major”</text>
+
+              <!-- stage 1 -->
+              <rect x="14" y="86" width="200" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              <text x="114" y="110" font-size="12.5" font-weight="600" text-anchor="middle" fill="currentColor">1 · Candidate gen</text>
+              <text x="114" y="128" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">NER + alias gazetteer</text>
+              <text x="114" y="141" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">high recall, low precision</text>
+
+              <!-- candidates -->
+              <g font-family="monospace" font-size="11" fill="currentColor">
+                <rect x="248" y="80" width="108" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".65"/>
+                <text x="302" y="95" text-anchor="middle">TATAMOTORS</text>
+                <rect x="248" y="108" width="108" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".65"/>
+                <text x="302" y="123" text-anchor="middle">TATASTEEL</text>
+                <rect x="248" y="136" width="108" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".65"/>
+                <text x="302" y="151" text-anchor="middle">TCS</text>
+              </g>
+
+              <!-- stage 2 -->
+              <rect x="392" y="86" width="200" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              <text x="492" y="110" font-size="12.5" font-weight="600" text-anchor="middle" fill="currentColor">2 · Disambiguate</text>
+              <text x="492" y="128" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">cross-encoder over</text>
+              <text x="492" y="141" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">(sentence, company card)</text>
+
+              <!-- stage 3 -->
+              <rect x="626" y="86" width="200" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              <text x="726" y="110" font-size="12.5" font-weight="600" text-anchor="middle" fill="currentColor">3 · Threshold</text>
+              <text x="726" y="128" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">accept if conf ≥ τ</text>
+              <text x="726" y="141" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">else discard</text>
+
+              <!-- arrows row 1 -->
+              <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)">
+                <line x1="114" y1="54" x2="114" y2="82"/>
+                <line x1="214" y1="117" x2="242" y2="117"/>
+                <line x1="362" y1="117" x2="386" y2="117"/>
+                <line x1="592" y1="117" x2="620" y2="117"/>
+              </g>
+
+              <!-- accepted output -->
+              <rect x="626" y="186" width="200" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <text x="726" y="204" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor" font-family="monospace">TATAMOTORS</text>
+              <text x="726" y="219" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">conf 0.94 · primary subject</text>
+              <line x1="726" y1="148" x2="726" y2="182" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+
+              <!-- stage 4 propagation -->
+              <rect x="14" y="252" width="912" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 3"/>
+              <text x="150" y="275" font-size="12.5" font-weight="600" fill="currentColor">4 · Propagation graph</text>
+              <text x="150" y="292" font-size="10.5" fill="currentColor" opacity=".72">learned edge weights</text>
+
+              <g font-family="monospace" font-size="10.5" fill="currentColor">
+                <rect x="330" y="266" width="124" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+                <text x="392" y="282" text-anchor="middle">NIFTYAUTO · 0.55</text>
+                <rect x="470" y="266" width="124" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+                <text x="532" y="282" text-anchor="middle">M&amp;M · 0.31</text>
+                <rect x="610" y="266" width="124" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+                <text x="672" y="282" text-anchor="middle">MARUTI · 0.28</text>
+                <rect x="750" y="266" width="160" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>
+                <text x="830" y="282" text-anchor="middle">MOTHERSON · 0.22</text>
+              </g>
+              <path d="M 700 226 C 620 240 400 244 330 266" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#ar2)" opacity=".75"/>
+            </svg>
+          </div>
+          <figcaption><b>Figure 5.1</b> — Resolution as high-recall candidate generation followed by precision-restoring disambiguation. The alias gazetteer alone would return three Tata entities; the cross-encoder reading the sentence in context rejects two of them. Accepted links then fan out through the propagation graph at damped weights.</figcaption>
+        </figure>
+
+        <h3><span class="num">5.2</span>Two-Stage Design</h3>
+        <p>Candidate generation optimises recall: a gazetteer of company names, former names, brand names, ISINs and common abbreviations, combined with a spaCy <code>ORG</code> extraction pass. Disambiguation then restores precision by scoring each candidate against the sentence with a cross-encoder, where each company is represented by a short "company card" — name, sector, principal business, key brands.</p>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/entity/resolve.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">from</span> sentence_transformers <span class="kw">import</span> CrossEncoder
+<span class="kw">from</span> rapidfuzz <span class="kw">import</span> process, fuzz
+<span class="kw">import</span> spacy
+
+nlp = spacy.load(<span class="str">"en_core_web_sm"</span>)
+ranker = CrossEncoder(<span class="str">"cross-encoder/ms-marco-MiniLM-L-6-v2"</span>)
+
+<span class="kw">def</span> generate_candidates(text, gazetteer, limit=<span class="str">8</span>):
+    <span class="str">"""High recall. Union of NER spans and fuzzy gazetteer hits."""</span>
+    spans = [e.text <span class="kw">for</span> e <span class="kw">in</span> nlp(text).ents <span class="kw">if</span> e.label_ == <span class="str">"ORG"</span>]
+    hits = {}
+    <span class="kw">for</span> span <span class="kw">in</span> spans:
+        <span class="kw">for</span> alias, score, ticker <span class="kw">in</span> process.extract(
+                span, gazetteer, scorer=fuzz.WRatio, limit=<span class="str">3</span>):
+            <span class="kw">if</span> score &gt;= <span class="str">82</span>:
+                hits[ticker] = max(hits.get(ticker, <span class="str">0</span>), score)
+    <span class="kw">return</span> sorted(hits, key=hits.get, reverse=<span class="kw">True</span>)[:limit]
+
+<span class="kw">def</span> disambiguate(text, candidates, cards, tau=<span class="str">0.55</span>):
+    <span class="str">"""Restore precision. Score (sentence, company card) pairs."""</span>
+    <span class="kw">if</span> <span class="kw">not</span> candidates:
+        <span class="kw">return</span> []
+    pairs  = [(text, cards[t]) <span class="kw">for</span> t <span class="kw">in</span> candidates]
+    scores = ranker.predict(pairs)
+    linked = [(t, float(s)) <span class="kw">for</span> t, s <span class="kw">in</span> zip(candidates, scores) <span class="kw">if</span> s &gt;= tau]
+    <span class="kw">return</span> sorted(linked, key=<span class="kw">lambda</span> x: -x[<span class="str">1</span>])
+
+<span class="cmt"># cards["TATAMOTORS"] = "Tata Motors — automobiles; commercial vehicles,</span>
+<span class="cmt">#   passenger vehicles, Jaguar Land Rover subsidiary; NSE auto sector."</span>
+</code></pre>
+        </div>
+
+        <h3><span class="num">5.3</span>Salience and Aboutness</h3>
+        <p>A resolved link is not yet a usable signal. The system additionally estimates how central the company is to the story, since a passing comparison should not carry the same weight as a subject. Salience combines mention position, mention count, and whether the entity appears in the headline:</p>
+
+        <div class="formula">
+          <span class="expr"><i>sal</i><sub>d,i</sub> = 0.5 · 1[<i>i</i> ∈ headline] + 0.3 · <i>n</i><sub>d,i</sub> / <i>N</i><sub>d</sub> + 0.2 · (1 − <i>p</i><sub>d,i</sub>)</span>
+          <span class="eqno">(5.1)</span>
+        </div>
+        <p class="where"><b>n<sub>d,i</sub></b> mentions of entity <i>i</i> in document <i>d</i>; <b>N<sub>d</sub></b> total entity mentions; <b>p<sub>d,i</sub></b> normalised position of the first mention, so an early mention scores higher.</p>
+
+        <h3><span class="num">5.4</span>Propagation</h3>
+        <p>Second-order exposure is modelled as a weighted graph. In Phase 1 the weights are hand-set, matching the prototype's sector map. From Phase 4 the adjacency matrix is estimated from data — rolling 120-day return correlation, sector co-membership, and index co-membership — and edge weights are learned jointly with the predictor per the approach in Section 2.5.</p>
+
+        <div class="formula">
+          <span class="expr"><i>ε</i><sub>j</sub> = <i>ε</i><sub>i</sub> · <i>w</i><sub>ij</sub> · (<i>β</i><sub>j</sub> / <i>β</i><sub>i</sub>) · <i>δ</i><sup><i>h</i>−1</sup></span>
+          <span class="eqno">(5.2)</span>
+        </div>
+        <p class="where"><b>ε<sub>i</sub></b> expected impact on the directly named security; <b>w<sub>ij</sub></b> edge weight from <i>i</i> to peer <i>j</i>; <b>β</b> market beta, so a high-beta peer inherits a larger move; <b>δ</b> ≈ 0.6 hop decay; <b>h</b> hop distance. Propagation is truncated at <i>h</i> = 2.</p>
+      </section>
+
+      <!-- ===================================================== 6 -->
+      <section id="s6">
+        <h2 class="sec"><span class="num">Section 6</span>Sentiment and Surprise</h2>
+
+        <h3><span class="num">6.1</span>The Expectation Gap</h3>
+        <p>The most consequential modelling decision in the system is the separation of <strong>tone</strong> from <strong>surprise</strong>. These coincide for unscheduled events and diverge sharply for scheduled ones.</p>
+
+        <figure>
+          <div class="fig-scroll">
+            <svg viewBox="0 0 880 250" role="img" aria-label="Two headlines with identical positive tone produce opposite abnormal returns: an unscheduled order win rises, while an earnings beat that misses consensus falls, because price responds to the deviation from expectation rather than to absolute favourability.">
+              <defs>
+                <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+                </marker>
+              </defs>
+
+              <!-- left case -->
+              <rect x="14" y="16" width="400" height="52" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".65"/>
+              <text x="30" y="38" font-size="12" fill="currentColor" font-style="italic">“L&amp;T wins ₹9,000 cr order”</text>
+              <text x="30" y="56" font-size="10.5" fill="currentColor" opacity=".7">Unscheduled · no consensus exists</text>
+
+              <rect x="466" y="16" width="400" height="52" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".65"/>
+              <text x="482" y="38" font-size="12" fill="currentColor" font-style="italic">“Infosys profit up 18% YoY”</text>
+              <text x="482" y="56" font-size="10.5" fill="currentColor" opacity=".7">Scheduled · street expected 22%</text>
+
+              <!-- tone row -->
+              <text x="214" y="100" font-size="11.5" text-anchor="middle" fill="currentColor" opacity=".72">lexicon tone</text>
+              <text x="666" y="100" font-size="11.5" text-anchor="middle" fill="currentColor" opacity=".72">lexicon tone</text>
+              <rect x="152" y="108" width="124" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="214" y="126" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">POSITIVE</text>
+              <rect x="604" y="108" width="124" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="666" y="126" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">POSITIVE</text>
+
+              <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar3)">
+                <line x1="214" y1="68" x2="214" y2="104"/>
+                <line x1="666" y1="68" x2="666" y2="104"/>
+                <line x1="214" y1="134" x2="214" y2="176"/>
+                <line x1="666" y1="134" x2="666" y2="176"/>
+              </g>
+
+              <!-- surprise row -->
+              <text x="300" y="158" font-size="10.5" fill="currentColor" opacity=".7">surprise = n/a</text>
+              <text x="752" y="158" font-size="10.5" fill="currentColor" opacity=".7">surprise = −4 pp</text>
+
+              <!-- outcomes -->
+              <rect x="152" y="180" width="124" height="46" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+              <text x="214" y="200" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">CAR +2.1%</text>
+              <text x="214" y="217" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">tone was right</text>
+
+              <rect x="604" y="180" width="124" height="46" rx="3" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 3"/>
+              <text x="666" y="200" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor">CAR −5.3%</text>
+              <text x="666" y="217" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".72">tone was inverted</text>
+
+              <line x1="440" y1="16" x2="440" y2="234" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".4"/>
+            </svg>
+          </div>
+          <figcaption><b>Figure 6.1</b> — Identical tone, opposite outcome. The dashed box is the failure mode every naive sentiment pipeline exhibits. Gating scheduled events on a surprise feature is what prevents it.</figcaption>
+        </figure>
+
+        <p>The system therefore classifies every event as scheduled or unscheduled at ingestion. Scheduled events — quarterly results, MPC decisions, CPI and IIP prints, GST collection releases — require a surprise feature or are excluded from the trading signal. Unscheduled events use tone directly.</p>
+
+        <div class="formula">
+          <span class="expr"><i>surprise</i> = (<i>actual</i> − <i>consensus</i>) / <i>σ</i><sub>consensus</sub></span>
+          <span class="eqno">(6.1)</span>
+        </div>
+        <p class="where">Where a consensus estimate is unavailable — the common case for a free-data project — a proxy is used: the trailing four-quarter growth rate, or the analyst-free fallback of a seasonal naive forecast. Rev 1.0 flags such events <code>surprise_unavailable</code> and the model learns to discount them.</p>
+
+        <h3><span class="num">6.2</span>Scoring Ladder</h3>
+        <p>Three sentiment implementations are specified, deliberately ordered by cost. Each must beat its predecessor out-of-sample to justify replacing it.</p>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 6.1</b> — Sentiment model ladder. The point of the ordering is that the cheap model sets the bar the expensive model has to clear.</caption>
+            <thead>
+              <tr><th class="mono">Tier</th><th>Method</th><th>Output</th><th>Cost</th><th>Rationale</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">S0</td><td>Loughran–McDonald lexicon + India supplement</td><td>Scalar polarity</td><td class="mono">Trivial</td><td>Interpretable floor; ships day one</td></tr>
+              <tr><td class="mono">S1</td><td>SESTM-style screened vocabulary</td><td>Return-supervised score</td><td class="mono">Low, CPU</td><td>Learns sentiment from prices, not priors</td></tr>
+              <tr><td class="mono">S2</td><td>FinBERT fine-tuned on Indian headlines</td><td>3-class + 768-d embedding</td><td class="mono">GPU for training</td><td>Handles negation, hedging, conditionals</td></tr>
+              <tr><td class="mono">S3</td><td>Aspect-based extension of S2</td><td>Per-entity sentiment</td><td class="mono">High</td><td>Splits opposite-signed entities in one story</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>S3 matters more than it first appears. A headline like <em>"Safeguard duty on steel imports lifts domestic mills, hits auto makers"</em> carries opposite signs for two entities in one sentence. Document-level sentiment assigns both the same score and is simply wrong for one of them.</p>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/score/finbert.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">import</span> torch
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer, AutoModelForSequenceClassification
+
+MODEL = <span class="str">"ProsusAI/finbert"</span>
+tok   = AutoTokenizer.from_pretrained(MODEL)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL).eval()
+
+LABELS = [<span class="str">"positive"</span>, <span class="str">"negative"</span>, <span class="str">"neutral"</span>]
+
+<span class="cmt">@torch.no_grad()</span>
+<span class="kw">def</span> score_batch(texts, batch_size=<span class="str">32</span>):
+    <span class="str">"""Return (polarity, confidence, cls_embedding) per text.
+
+    polarity  in [-1, 1]  = P(pos) - P(neg)
+    embedding used as a feature block by the LightGBM model in Sec. 9.
+    """</span>
+    out = []
+    <span class="kw">for</span> i <span class="kw">in</span> range(<span class="str">0</span>, len(texts), batch_size):
+        chunk = texts[i:i + batch_size]
+        enc = tok(chunk, padding=<span class="kw">True</span>, truncation=<span class="kw">True</span>,
+                  max_length=<span class="str">128</span>, return_tensors=<span class="str">"pt"</span>)
+        res  = model(**enc, output_hidden_states=<span class="kw">True</span>)
+        prob = torch.softmax(res.logits, dim=-<span class="str">1</span>)
+        cls  = res.hidden_states[-<span class="str">1</span>][:, <span class="str">0</span>, :]      <span class="cmt"># [CLS] pooled</span>
+
+        <span class="kw">for</span> p, e <span class="kw">in</span> zip(prob, cls):
+            polarity   = (p[<span class="str">0</span>] - p[<span class="str">1</span>]).item()
+            confidence = p.max().item()
+            out.append((polarity, confidence, e.numpy()))
+    <span class="kw">return</span> out
+</code></pre>
+        </div>
+
+        <h3><span class="num">6.3</span>Novelty and Staleness</h3>
+        <p>The fifth article about a story carries almost no information; the first carries most of it. Novelty is computed against a rolling embedding index of recent documents:</p>
+
+        <div class="formula">
+          <span class="expr"><i>nov</i><sub>d</sub> = 1 − max<sub><i>d'</i> ∈ <i>W</i></sub> cos(<i>v</i><sub>d</sub>, <i>v</i><sub>d'</sub>)</span>
+          <span class="eqno">(6.2)</span>
+        </div>
+        <p class="where"><b>W</b> the set of documents from the trailing 48 hours; <b>v</b> a sentence-transformer embedding. A near-duplicate scores near 0 and is suppressed; a genuinely new story scores near 1.</p>
+
+        <h3><span class="num">6.4</span>Event Aggregation</h3>
+        <p>Multiple documents about one event are collapsed into a single security-level score, weighted by credibility, salience and recency:</p>
+
+        <div class="formula">
+          <span class="expr"><i>S</i><sub>i,t</sub> = Σ<sub>d</sub> <i>s</i><sub>d,i</sub> · <i>c</i><sub>d</sub> · <i>sal</i><sub>d,i</sub> · <i>nov</i><sub>d</sub> · <i>e</i><sup>−<i>λ</i>(<i>t</i>−<i>t</i><sub>d</sub>)</sup> ⁄ Σ<sub>d</sub> <i>c</i><sub>d</sub> · <i>sal</i><sub>d,i</sub> · <i>nov</i><sub>d</sub></span>
+          <span class="eqno">(6.3)</span>
+        </div>
+        <p class="where"><b>s<sub>d,i</sub></b> sentiment of document <i>d</i> toward security <i>i</i>; <b>c<sub>d</sub></b> source credibility normalised to [0,1]; <b>λ</b> decay constant, initialised at ln(2)/24h so a day-old story carries half weight.</p>
+      </section>
+
+      <!-- ===================================================== 7 -->
+      <section id="s7">
+        <h2 class="sec"><span class="num">Section 7</span>Feature Parameters</h2>
+        <p>The feature vector for a (security, event) pair spans five families. Text features alone are weak; the interaction between text and market state is where predictive content concentrates. A strongly positive story about a stock already up 12% in five sessions is a materially different proposition from the same story on a stock that has gone nowhere.</p>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 7.1</b> — Full feature specification. Families A and B derive from text; C, D and E are market state and are the ones that make the text features conditional rather than absolute.</caption>
+            <thead>
+              <tr><th class="mono">ID</th><th>Feature</th><th>Type</th><th>Definition / rationale</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">A1</td><td>sentiment_polarity</td><td class="mono">float</td><td>P(pos) − P(neg) from the active sentiment tier</td></tr>
+              <tr><td class="mono">A2</td><td>sentiment_conf</td><td class="mono">float</td><td>Max class probability; low confidence should shrink the signal</td></tr>
+              <tr><td class="mono">A3</td><td>aspect_polarity</td><td class="mono">float</td><td>Entity-specific sentiment where S3 is available</td></tr>
+              <tr><td class="mono">A4</td><td>surprise_z</td><td class="mono">float</td><td>Standardised deviation from consensus; null for unscheduled</td></tr>
+              <tr><td class="mono">A5</td><td>is_scheduled</td><td class="mono">bool</td><td>Gates whether A1 or A4 should dominate</td></tr>
+              <tr><td class="mono">A6</td><td>hedge_density</td><td class="mono">float</td><td>Modal/conditional word rate — "may", "could", "reportedly"</td></tr>
+              <tr><td class="mono">A7</td><td>forward_looking_ratio</td><td class="mono">float</td><td>Future-tense clause share; guidance moves more than history</td></tr>
+              <tr><td class="mono">A8</td><td>finbert_emb[0:768]</td><td class="mono">vector</td><td>Frozen [CLS] embedding, PCA-reduced to 32 dims in practice</td></tr>
+
+              <tr><td class="mono">B1</td><td>novelty</td><td class="mono">float</td><td>Equation 6.2; suppresses syndicated repeats</td></tr>
+              <tr><td class="mono">B2</td><td>cluster_size</td><td class="mono">int</td><td>Distinct publishers on the story — corroboration proxy</td></tr>
+              <tr><td class="mono">B3</td><td>velocity</td><td class="mono">float</td><td>Mentions per hour, first derivative of B2</td></tr>
+              <tr><td class="mono">B4</td><td>source_cred_w</td><td class="mono">float</td><td>Credibility-weighted mean across the cluster</td></tr>
+              <tr><td class="mono">B5</td><td>tier1_present</td><td class="mono">bool</td><td>Whether a primary filing backs the story</td></tr>
+              <tr><td class="mono">B6</td><td>hours_since_first</td><td class="mono">float</td><td>Staleness at prediction time</td></tr>
+              <tr><td class="mono">B7</td><td>category</td><td class="mono">cat</td><td>Earnings, regulation, order win, macro, commodity, deal</td></tr>
+
+              <tr><td class="mono">C1</td><td>salience</td><td class="mono">float</td><td>Equation 5.1</td></tr>
+              <tr><td class="mono">C2</td><td>link_conf</td><td class="mono">float</td><td>Cross-encoder disambiguation confidence</td></tr>
+              <tr><td class="mono">C3</td><td>hop_distance</td><td class="mono">int</td><td>0 direct, 1 sector peer, 2 supply chain</td></tr>
+              <tr><td class="mono">C4</td><td>is_primary_subject</td><td class="mono">bool</td><td>Headline subject vs. incidental mention</td></tr>
+
+              <tr><td class="mono">D1</td><td>ret_5d_pre</td><td class="mono">float</td><td>Trailing 5-day abnormal return — momentum or exhaustion</td></tr>
+              <tr><td class="mono">D2</td><td>realised_vol_20d</td><td class="mono">float</td><td>Scales the expected magnitude of any response</td></tr>
+              <tr><td class="mono">D3</td><td>beta_60d</td><td class="mono">float</td><td>Rolling market beta, needed for D1 and for labelling</td></tr>
+              <tr><td class="mono">D4</td><td>turnover_ratio</td><td class="mono">float</td><td>Volume ÷ 20-day ADV; thin names drift longer</td></tr>
+              <tr><td class="mono">D5</td><td>mcap_decile</td><td class="mono">int</td><td>The hypothesis variable — edge should concentrate in high deciles</td></tr>
+              <tr><td class="mono">D6</td><td>days_to_earnings</td><td class="mono">int</td><td>Proximity to a scheduled catalyst contaminates the window</td></tr>
+              <tr><td class="mono">D7</td><td>circuit_proximity</td><td class="mono">float</td><td>Distance to price band; truncates realisable moves</td></tr>
+              <tr><td class="mono">D8</td><td>in_fno</td><td class="mono">bool</td><td>F&amp;O names price information faster</td></tr>
+
+              <tr><td class="mono">E1</td><td>india_vix</td><td class="mono">float</td><td>Regime conditioner; news matters more when vol is high</td></tr>
+              <tr><td class="mono">E2</td><td>nifty_ret_5d</td><td class="mono">float</td><td>Market trend context</td></tr>
+              <tr><td class="mono">E3</td><td>fii_flow_5d</td><td class="mono">float</td><td>Institutional flow regime</td></tr>
+              <tr><td class="mono">E4</td><td>sector_ret_5d</td><td class="mono">float</td><td>Is the sector already moving on this theme?</td></tr>
+              <tr><td class="mono">E5</td><td>usdinr_chg_5d</td><td class="mono">float</td><td>Currency regime — matters for IT and importers</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="label">Point-in-time discipline</span>
+          <p>Every feature must be computable using only information available at the prediction timestamp. The classic leak in this design is <code>beta_60d</code> and <code>realised_vol_20d</code> computed over a window that includes the event day. Both are computed on data strictly up to <em class="term">t−1</em>, and the feature builder asserts this rather than trusting it.</p>
+        </div>
+      </section>
+
+      <!-- ===================================================== 8 -->
+      <section id="s8">
+        <h2 class="sec"><span class="num">Section 8</span>Label Construction</h2>
+        <p>The label is the abnormal return over the prediction window. This section specifies it fully, because a subtle error here invalidates everything downstream and is invisible in the metrics.</p>
+
+        <h3><span class="num">8.1</span>Market Model</h3>
+        <p>Simple returns are computed on adjusted closes:</p>
+        <div class="formula">
+          <span class="expr"><i>R</i><sub>i,t</sub> = (<i>P</i><sub>i,t</sub> − <i>P</i><sub>i,t−1</sub>) / <i>P</i><sub>i,t−1</sub></span>
+          <span class="eqno">(8.1)</span>
+        </div>
+
+        <p>Expected return is estimated by the single-index market model over a clean estimation window preceding the event:</p>
+        <div class="formula">
+          <span class="expr"><i>R</i><sub>i,t</sub> = <i>α</i><sub>i</sub> + <i>β</i><sub>i</sub> <i>R</i><sub>m,t</sub> + <i>ε</i><sub>i,t</sub></span>
+          <span class="eqno">(8.2)</span>
+        </div>
+
+        <p>The abnormal return is the residual — the part of the move the market cannot explain:</p>
+        <div class="formula">
+          <span class="expr"><i>AR</i><sub>i,t</sub> = <i>R</i><sub>i,t</sub> − (<i>α̂</i><sub>i</sub> + <i>β̂</i><sub>i</sub> <i>R</i><sub>m,t</sub>)</span>
+          <span class="eqno">(8.3)</span>
+        </div>
+
+        <p>And cumulated across the event window:</p>
+        <div class="formula">
+          <span class="expr"><i>CAR</i><sub>i</sub>(<i>t</i><sub>1</sub>, <i>t</i><sub>2</sub>) = Σ<sub><i>t</i>=<i>t</i><sub>1</sub></sub><sup><i>t</i><sub>2</sub></sup> <i>AR</i><sub>i,t</sub></span>
+          <span class="eqno">(8.4)</span>
+        </div>
+
+        <figure>
+          <div class="fig-scroll">
+            <svg viewBox="0 0 880 230" role="img" aria-label="Event study timeline: a 120-day estimation window ending ten days before the event fits alpha and beta, a ten-day gap prevents contamination, the event occurs at time zero, and the label is the cumulative abnormal return measured from t plus one to t plus five.">
+              <defs>
+                <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+                </marker>
+              </defs>
+
+              <!-- timeline -->
+              <line x1="30" y1="120" x2="850" y2="120" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+              <!-- estimation window -->
+              <rect x="40" y="88" width="380" height="32" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="230" y="109" font-size="12" text-anchor="middle" fill="currentColor">Estimation window — 120 trading days</text>
+              <text x="230" y="72" font-size="11" text-anchor="middle" fill="currentColor" opacity=".72">fit α̂, β̂ by OLS</text>
+
+              <!-- gap -->
+              <rect x="420" y="88" width="80" height="32" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" opacity=".7"/>
+              <text x="460" y="109" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".75">gap 10d</text>
+
+              <!-- event -->
+              <line x1="520" y1="60" x2="520" y2="150" stroke="currentColor" stroke-width="2.2"/>
+              <text x="520" y="52" font-size="12.5" font-weight="700" text-anchor="middle" fill="currentColor">event t = 0</text>
+
+              <!-- event window -->
+              <rect x="540" y="88" width="220" height="32" fill="none" stroke="currentColor" stroke-width="2"/>
+              <text x="650" y="109" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">CAR [t+1, t+5]</text>
+              <text x="650" y="72" font-size="11" text-anchor="middle" fill="currentColor" opacity=".72">label measured here</text>
+
+              <!-- day ticks -->
+              <g stroke="currentColor" stroke-width="1" opacity=".55">
+                <line x1="584" y1="120" x2="584" y2="130"/>
+                <line x1="628" y1="120" x2="628" y2="130"/>
+                <line x1="672" y1="120" x2="672" y2="130"/>
+                <line x1="716" y1="120" x2="716" y2="130"/>
+                <line x1="760" y1="120" x2="760" y2="130"/>
+              </g>
+              <g font-size="10" text-anchor="middle" fill="currentColor" opacity=".65">
+                <text x="584" y="144">+1</text>
+                <text x="628" y="144">+2</text>
+                <text x="672" y="144">+3</text>
+                <text x="716" y="144">+4</text>
+                <text x="760" y="144">+5</text>
+              </g>
+
+              <!-- entry note -->
+              <text x="584" y="172" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".8">entry assumed at t+1 open</text>
+              <line x1="584" y1="160" x2="584" y2="150" stroke="currentColor" stroke-width="1.1" opacity=".7"/>
+
+              <text x="440" y="200" font-size="11" fill="currentColor" opacity=".72">The gap prevents pre-event leakage from contaminating the β̂ estimate.</text>
+            </svg>
+          </div>
+          <figcaption><b>Figure 8.1</b> — Event-study windows. The label starts at <em>t+1</em>, not <em>t</em>, because an event published mid-session cannot be traded at that day's open; assuming otherwise is the most common source of illusory backtest performance.</figcaption>
+        </figure>
+
+        <h3><span class="num">8.2</span>Volatility-Scaled Classes</h3>
+        <p>A fixed ±2% threshold treats a utility and a smallcap identically, which is wrong — a 2% move in NTPC is a significant event and in a smallcap is noise. Thresholds scale with each security's own abnormal-return volatility:</p>
+
+        <div class="formula">
+          <span class="expr"><i>τ</i><sub>i</sub> = <i>k</i> · <i>σ</i><sub>AR,i</sub> · √<i>H</i></span>
+          <span class="eqno">(8.5)</span>
+        </div>
+        <p class="where"><b>σ<sub>AR,i</sub></b> daily residual standard deviation from the estimation window; <b>H</b> horizon in days; <b>k</b> ≈ 1.0, tuned so the flat class holds roughly 40% of samples.</p>
+
+        <div class="formula">
+          <span class="expr"><i>y</i><sub>i</sub> = +1 if <i>CAR</i><sub>i</sub> &gt; <i>τ</i><sub>i</sub> ; −1 if <i>CAR</i><sub>i</sub> &lt; −<i>τ</i><sub>i</sub> ; 0 otherwise</span>
+          <span class="eqno">(8.6)</span>
+        </div>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/labels/abnormal.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+<span class="kw">def</span> market_model(stock_ret, mkt_ret, est_end, window=<span class="str">120</span>, gap=<span class="str">10</span>):
+    <span class="str">"""OLS alpha/beta on a clean pre-event window."""</span>
+    stop  = est_end - pd.Timedelta(days=gap)
+    start = stop - pd.Timedelta(days=window * <span class="str">1.5</span>)   <span class="cmt"># calendar slack</span>
+    y = stock_ret.loc[start:stop].dropna()
+    x = mkt_ret.reindex(y.index).dropna()
+    y = y.reindex(x.index)
+    <span class="kw">if</span> len(y) &lt; <span class="str">60</span>:
+        <span class="kw">return</span> np.nan, np.nan, np.nan
+    beta, alpha = np.polyfit(x.values, y.values, <span class="str">1</span>)
+    resid       = y.values - (alpha + beta * x.values)
+    <span class="kw">return</span> alpha, beta, resid.std(ddof=<span class="str">2</span>)
+
+<span class="kw">def</span> car_label(stock_ret, mkt_ret, event_date, horizon=<span class="str">5</span>, k=<span class="str">1.0</span>):
+    <span class="str">"""CAR over [t+1, t+H] with a volatility-scaled 3-class label."""</span>
+    alpha, beta, sigma = market_model(stock_ret, mkt_ret, event_date)
+    <span class="kw">if</span> np.isnan(beta):
+        <span class="kw">return</span> <span class="kw">None</span>
+
+    fwd = stock_ret.loc[stock_ret.index &gt; event_date].head(horizon)
+    <span class="kw">if</span> len(fwd) &lt; horizon:
+        <span class="kw">return</span> <span class="kw">None</span>                              <span class="cmt"># incomplete window, drop</span>
+
+    mkt = mkt_ret.reindex(fwd.index)
+    ar  = fwd.values - (alpha + beta * mkt.values)
+    car = float(ar.sum())
+
+    tau = k * sigma * np.sqrt(horizon)
+    y   = <span class="str">1</span> <span class="kw">if</span> car &gt; tau <span class="kw">else</span> (-<span class="str">1</span> <span class="kw">if</span> car &lt; -tau <span class="kw">else</span> <span class="str">0</span>)
+    <span class="kw">return</span> {<span class="str">"car"</span>: car, <span class="str">"tau"</span>: tau, <span class="str">"label"</span>: y, <span class="str">"beta"</span>: beta}
+</code></pre>
+        </div>
+
+        <p>Note the explicit <code>return None</code> on an incomplete forward window. Silently padding short windows — common near listing dates, suspensions and long holidays — biases labels toward zero and is difficult to detect after the fact.</p>
+      </section>
+
+      <!-- ===================================================== 9 -->
+      <section id="s9">
+        <h2 class="sec"><span class="num">Section 9</span>Model Stack</h2>
+
+        <h3><span class="num">9.1</span>Ladder</h3>
+        <p>Four models, in the order they should be built. Each must beat the previous one on out-of-sample rank IC before the next is justified. Skipping to M3 is the standard way to spend three months producing something a logistic regression would have matched.</p>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 9.1</b> — Model ladder with inputs and the question each one answers.</caption>
+            <thead>
+              <tr><th class="mono">ID</th><th>Model</th><th>Inputs</th><th>Question it answers</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">M0</td><td>Constant / majority class</td><td>None</td><td>What does zero skill look like?</td></tr>
+              <tr><td class="mono">M1</td><td>Multinomial logistic regression</td><td>A1–A7, B1–B7, C1–C4</td><td>Is there any linear signal in the text features?</td></tr>
+              <tr><td class="mono">M2</td><td>LightGBM (multiclass)</td><td>M1 features + D1–D8, E1–E5</td><td>Does text × market-state interaction add value?</td></tr>
+              <tr><td class="mono">M3</td><td>FinBERT embeddings + LightGBM</td><td>M2 features + A8 (PCA-32)</td><td>Does contextual language beat engineered features?</td></tr>
+              <tr><td class="mono">M4</td><td>Temporal + graph attention</td><td>Event sequence + correlation graph</td><td>Do multi-day narratives and peer effects matter?</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>LightGBM is the workhorse rather than a neural network, for reasons specific to this dataset: the sample size is small by deep-learning standards — perhaps 50,000 to 200,000 labelled (security, event) pairs for a few years of Indian news — the features are heterogeneous and heavily tabular, and gradient boosting is materially more sample-efficient in that regime. The transformer earns its place as a <em>feature extractor</em> (M3), not as the end-to-end predictor.</p>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/model/train.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">import</span> lightgbm <span class="kw">as</span> lgb
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> log_loss
+
+PARAMS = {
+    <span class="str">"objective"</span>:        <span class="str">"multiclass"</span>,
+    <span class="str">"num_class"</span>:        <span class="str">3</span>,
+    <span class="str">"learning_rate"</span>:    <span class="str">0.03</span>,
+    <span class="str">"num_leaves"</span>:       <span class="str">31</span>,
+    <span class="str">"min_data_in_leaf"</span>: <span class="str">120</span>,     <span class="cmt"># guard against noise memorisation</span>
+    <span class="str">"feature_fraction"</span>: <span class="str">0.75</span>,
+    <span class="str">"bagging_fraction"</span>: <span class="str">0.80</span>,
+    <span class="str">"bagging_freq"</span>:     <span class="str">5</span>,
+    <span class="str">"lambda_l2"</span>:        <span class="str">5.0</span>,
+    <span class="str">"verbosity"</span>:        -<span class="str">1</span>,
+}
+
+<span class="kw">def</span> train_fold(X_tr, y_tr, X_va, y_va, w_tr=<span class="kw">None</span>):
+    <span class="str">"""One walk-forward fold. Sample weights carry |CAR| so that
+    large, unambiguous moves count more than marginal ones."""</span>
+    dtr = lgb.Dataset(X_tr, label=y_tr + <span class="str">1</span>, weight=w_tr)
+    dva = lgb.Dataset(X_va, label=y_va + <span class="str">1</span>, reference=dtr)
+
+    booster = lgb.train(
+        PARAMS, dtr,
+        num_boost_round=<span class="str">2000</span>,
+        valid_sets=[dva],
+        callbacks=[lgb.early_stopping(<span class="str">100</span>, verbose=<span class="kw">False</span>)],
+    )
+    proba = booster.predict(X_va, num_iteration=booster.best_iteration)
+    <span class="kw">return</span> booster, proba, log_loss(y_va + <span class="str">1</span>, proba, labels=[<span class="str">0</span>, <span class="str">1</span>, <span class="str">2</span>])
+
+<span class="kw">def</span> expected_score(proba):
+    <span class="str">"""Collapse 3-class probabilities to a single rankable number."""</span>
+    <span class="kw">return</span> proba[:, <span class="str">2</span>] - proba[:, <span class="str">0</span>]        <span class="cmt"># P(up) - P(down)</span>
+</code></pre>
+        </div>
+
+        <h3><span class="num">9.2</span>Calibration</h3>
+        <p>Raw boosted-tree probabilities are poorly calibrated, and calibration matters here because the dashboard renders a confidence level to a human. Isotonic regression is fitted on a held-out slice and applied before display. Reliability curves are reported per fold.</p>
+
+        <h3><span class="num">9.3</span>Class Imbalance and Weighting</h3>
+        <p>Roughly 40% of samples are flat by construction (Equation 8.5). Rather than resampling, training uses sample weights proportional to <em class="term">|CAR| ⁄ τ</em>, which makes the model care most about the events it most needs to get right, and naturally discounts borderline cases near the class boundary.</p>
+      </section>
+
+      <!-- ===================================================== 10 -->
+      <section id="s10">
+        <h2 class="sec"><span class="num">Section 10</span>Validation Protocol</h2>
+
+        <h3><span class="num">10.1</span>Walk-Forward Only</h3>
+        <p>Random k-fold cross-validation is invalid for this problem. Market regimes are autocorrelated, and a random split places future observations in the training set, producing optimistic results that evaporate live. Validation is strictly walk-forward with an embargo.</p>
+
+        <figure>
+          <div class="fig-scroll">
+            <svg viewBox="0 0 880 250" role="img" aria-label="Walk-forward validation with four expanding folds, each separated from its test period by an embargo gap equal to the label horizon, so no training observation overlaps a test label window.">
+              <g font-size="11" fill="currentColor">
+                <text x="14" y="30" font-size="11.5" opacity=".72">2021</text>
+                <text x="222" y="30" font-size="11.5" opacity=".72">2022</text>
+                <text x="430" y="30" font-size="11.5" opacity=".72">2023</text>
+                <text x="638" y="30" font-size="11.5" opacity=".72">2024</text>
+                <text x="812" y="30" font-size="11.5" opacity=".72">2025</text>
+              </g>
+              <line x1="14" y1="40" x2="866" y2="40" stroke="currentColor" stroke-width="1" opacity=".3"/>
+
+              <!-- fold rows -->
+              <g stroke="currentColor" stroke-width="1.3">
+                <!-- f1 -->
+                <rect x="14"  y="56"  width="270" height="26" fill="none"/>
+                <rect x="294" y="56"  width="20"  height="26" fill="none" stroke-dasharray="3 2" opacity=".6"/>
+                <rect x="320" y="56"  width="120" height="26" fill="none" stroke-width="2.2"/>
+                <!-- f2 -->
+                <rect x="14"  y="96"  width="400" height="26" fill="none"/>
+                <rect x="424" y="96"  width="20"  height="26" fill="none" stroke-dasharray="3 2" opacity=".6"/>
+                <rect x="450" y="96"  width="120" height="26" fill="none" stroke-width="2.2"/>
+                <!-- f3 -->
+                <rect x="14"  y="136" width="530" height="26" fill="none"/>
+                <rect x="554" y="136" width="20"  height="26" fill="none" stroke-dasharray="3 2" opacity=".6"/>
+                <rect x="580" y="136" width="120" height="26" fill="none" stroke-width="2.2"/>
+                <!-- f4 -->
+                <rect x="14"  y="176" width="660" height="26" fill="none"/>
+                <rect x="684" y="176" width="20"  height="26" fill="none" stroke-dasharray="3 2" opacity=".6"/>
+                <rect x="710" y="176" width="120" height="26" fill="none" stroke-width="2.2"/>
+              </g>
+
+              <g font-size="11" fill="currentColor">
+                <text x="24" y="74">train</text>
+                <text x="24" y="114">train</text>
+                <text x="24" y="154">train</text>
+                <text x="24" y="194">train</text>
+              </g>
+              <g font-size="11" font-weight="600" text-anchor="middle" fill="currentColor">
+                <text x="380" y="74">test</text>
+                <text x="510" y="114">test</text>
+                <text x="640" y="154">test</text>
+                <text x="770" y="194">test</text>
+              </g>
+
+              <text x="304" y="230" font-size="10.5" text-anchor="middle" fill="currentColor" opacity=".75">embargo</text>
+              <line x1="304" y1="212" x2="304" y2="222" stroke="currentColor" stroke-width="1" opacity=".6"/>
+
+              <text x="480" y="230" font-size="11" fill="currentColor" opacity=".75">Embargo = label horizon, so no training label window reaches into a test period.</text>
+            </svg>
+          </div>
+          <figcaption><b>Figure 10.1</b> — Expanding-window walk-forward with embargo. Reporting the spread of IC across folds matters more than its mean: a strategy that works in one regime and not others is not a strategy.</figcaption>
+        </figure>
+
+        <h3><span class="num">10.2</span>Leakage Checklist</h3>
+        <ul>
+          <li><strong>Embargo gap</strong> of at least <em class="term">H</em> days between train and test, or a training label window overlaps the test period.</li>
+          <li><strong>Entry at t+1</strong>, never at the event-day close.</li>
+          <li><strong>Point-in-time universe.</strong> Backtesting today's NIFTY 50 constituents over five years embeds survivorship — the index drops losers.</li>
+          <li><strong>Unrevised macro data.</strong> CPI and IIP are revised; using the final print is look-ahead. Use first-release vintages.</li>
+          <li><strong>Split and bonus adjustment</strong> applied consistently to both price and volume.</li>
+          <li><strong>Feature windows</strong> terminate at <em class="term">t−1</em>, asserted in code.</li>
+        </ul>
+
+        <div class="listing">
+          <div class="listing-head"><span>geotrade/backtest/walkforward.py</span><span class="lang">Python</span></div>
+<pre><code><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> scipy.stats <span class="kw">import</span> spearmanr
+
+<span class="kw">def</span> walk_forward_folds(df, date_col=<span class="str">"event_date"</span>,
+                       test_months=<span class="str">6</span>, embargo_days=<span class="str">5</span>, min_train_months=<span class="str">18</span>):
+    <span class="str">"""Expanding train window, fixed test window, embargo between."""</span>
+    dates  = pd.to_datetime(df[date_col]).sort_values()
+    start  = dates.min() + pd.DateOffset(months=min_train_months)
+    cursor = start
+    <span class="kw">while</span> cursor &lt; dates.max():
+        test_end   = cursor + pd.DateOffset(months=test_months)
+        train_mask = dates &lt;= cursor - pd.Timedelta(days=embargo_days)
+        test_mask  = (dates &gt; cursor) &amp; (dates &lt;= test_end)
+        <span class="kw">if</span> test_mask.sum() &gt; <span class="str">200</span>:
+            <span class="kw">yield</span> train_mask.values, test_mask.values
+        cursor = test_end
+
+<span class="kw">def</span> rank_ic(scores, realised_car, by_date):
+    <span class="str">"""Cross-sectional Spearman IC, averaged over days.
+
+    Computed per-day then averaged — a pooled correlation across all
+    dates would be dominated by market-wide moves rather than by the
+    model's ability to rank names against each other.
+    """</span>
+    frame = pd.DataFrame({<span class="str">"s"</span>: scores, <span class="str">"y"</span>: realised_car, <span class="str">"d"</span>: by_date})
+    daily = []
+    <span class="kw">for</span> _, g <span class="kw">in</span> frame.groupby(<span class="str">"d"</span>):
+        <span class="kw">if</span> len(g) &gt;= <span class="str">5</span>:
+            ic, _ = spearmanr(g[<span class="str">"s"</span>], g[<span class="str">"y"</span>])
+            <span class="kw">if</span> pd.notna(ic):
+                daily.append(ic)
+    s = pd.Series(daily)
+    <span class="kw">return</span> {<span class="str">"ic_mean"</span>: s.mean(), <span class="str">"ic_std"</span>: s.std(),
+            <span class="str">"ic_ir"</span>: s.mean() / s.std() <span class="kw">if</span> s.std() <span class="kw">else</span> <span class="str">0.0</span>,
+            <span class="str">"n_days"</span>: len(s)}
+</code></pre>
+        </div>
+      </section>
+
+      <!-- ===================================================== 11 -->
+      <section id="s11">
+        <h2 class="sec"><span class="num">Section 11</span>Evaluation Metrics</h2>
+        <p>Classification accuracy is close to useless here — a model predicting "flat" always scores 40%. The metrics below are ordered by how much they should influence the decision to continue.</p>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 11.1</b> — Evaluation metrics and go/no-go thresholds. IC is the primary decision metric.</caption>
+            <thead>
+              <tr><th>Metric</th><th>Definition</th><th>Baseline</th><th>Target</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Rank IC</td><td>Daily cross-sectional Spearman(score, CAR)</td><td class="mono">0.00</td><td class="mono up">&gt; 0.03</td></tr>
+              <tr><td>IC Information Ratio</td><td>mean(IC) ÷ std(IC)</td><td class="mono">0.00</td><td class="mono up">&gt; 0.30</td></tr>
+              <tr><td>Directional hit rate</td><td>Sign accuracy on non-flat predictions</td><td class="mono">50%</td><td class="mono up">&gt; 54%</td></tr>
+              <tr><td>Precision@10</td><td>Share of top-10 daily picks with CAR &gt; 0</td><td class="mono">50%</td><td class="mono up">&gt; 58%</td></tr>
+              <tr><td>Mean CAR, top decile</td><td>Average 5-day abnormal return, highest-scored decile</td><td class="mono">0 bps</td><td class="mono up">&gt; 40 bps</td></tr>
+              <tr><td>Long–short spread</td><td>Top decile CAR minus bottom decile CAR</td><td class="mono">0 bps</td><td class="mono up">&gt; 80 bps</td></tr>
+              <tr><td>Brier score</td><td>Calibration of the 3-class output</td><td class="mono">0.22</td><td class="mono up">&lt; 0.20</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="formula">
+          <span class="expr"><i>IC</i><sub><i>t</i></sub> = ρ<sub>Spearman</sub>( <i>ŝ</i><sub>i,t</sub> , <i>CAR</i><sub>i</sub>(<i>t</i>+1, <i>t</i>+5) )</span>
+          <span class="eqno">(11.1)</span>
+        </div>
+        <div class="formula">
+          <span class="expr"><i>IR</i> = mean<sub><i>t</i></sub>(<i>IC</i><sub><i>t</i></sub>) ⁄ sd<sub><i>t</i></sub>(<i>IC</i><sub><i>t</i></sub>)</span>
+          <span class="eqno">(11.2)</span>
+        </div>
+
+        <div class="callout">
+          <span class="label">Calibrate expectations</span>
+          <p>A rank IC of 0.03 sounds negligible and is in fact a respectable result for a daily equity signal — published cross-sectional signals frequently sit in the 0.02–0.05 band. If early results show IC above 0.15, the first hypothesis should be a data leak, not a discovery. Check the embargo and the entry timing before celebrating.</p>
+        </div>
+
+        <h3><span class="num">11.1</span>Stratified Reporting</h3>
+        <p>The headline number is less useful than its decomposition. Objective O5 requires IC reported by market-cap decile, by liquidity bucket, by event category and by volatility regime. The project's core hypothesis — that the edge lives in thinly covered names — is confirmed or refuted precisely here, and a flat overall IC that is strongly positive in the smallest three deciles is a success, not a failure.</p>
+      </section>
+
+      <!-- ===================================================== 12 -->
+      <section id="s12">
+        <h2 class="sec"><span class="num">Section 12</span>Implementation Roadmap</h2>
+        <p>Each phase ends in a gate. A failed gate is a reason to stop or redesign, not to proceed with more features.</p>
+
+        <div class="phases">
+          <div class="phase">
+            <div class="tag">Phase 0</div>
+            <div>
+              <h4>Historical corpus</h4>
+              <p>Archive 24–36 months of news and exchange filings with timestamps. Assemble adjusted EOD prices for the full NSE universe and the index series. Without history there is nothing to validate against, and this is the long pole — start it first and let it run.</p>
+              <span class="gate">Gate: ≥ 20k labelled (security, event) pairs</span>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="tag">Phase 1</div>
+            <div>
+              <h4>Labels and baseline</h4>
+              <p>Implement the event study of Section 8. Build S0 lexicon scoring and the M1 logistic model. Run the first walk-forward. This phase answers the existential question and is deliberately placed before any transformer work.</p>
+              <span class="gate">Gate: IC &gt; 0 with a positive lower confidence bound</span>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="tag">Phase 2</div>
+            <div>
+              <h4>Entity resolution and features</h4>
+              <p>Two-stage resolver with a hand-labelled evaluation set. Full feature table from Section 7. Move to M2 (LightGBM). Add tier-1 exchange filings to ingestion.</p>
+              <span class="gate">Gate: link precision ≥ 0.90; IC improves over Phase 1</span>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="tag">Phase 3</div>
+            <div>
+              <h4>Neural sentiment</h4>
+              <p>Fine-tune FinBERT on hand-labelled Indian headlines; add embeddings as M3 features. Introduce the surprise feature for scheduled events. Calibrate probabilities.</p>
+              <span class="gate">Gate: M3 beats M2 out-of-sample, or M2 is retained</span>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="tag">Phase 4</div>
+            <div>
+              <h4>Propagation and sequence</h4>
+              <p>Learned correlation graph replacing hand-set weights. Temporal attention over multi-day event sequences. Aspect-based sentiment for opposite-signed entities.</p>
+              <span class="gate">Gate: incremental IC justifies the complexity</span>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="tag">Phase 5</div>
+            <div>
+              <h4>Live paper trading</h4>
+              <p>Run forward in real time with no capital. Compare realised IC against backtest IC. A large gap is the signal that something in the backtest was optimistic — and it usually is.</p>
+              <span class="gate">Gate: live IC within 50% of backtest IC over 3 months</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================== 13 -->
+      <section id="s13">
+        <h2 class="sec"><span class="num">Section 13</span>Risks and Limitations</h2>
+
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table 13.1</b> — Principal risks. R1 is the project-level risk; the rest are manageable.</caption>
+            <thead>
+              <tr><th class="mono">ID</th><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">R1</td><td>No exploitable signal at public-feed latency</td><td class="down">Fatal</td><td>Phase-1 gate tests this before major investment; fall back to the explanation product</td></tr>
+              <tr><td class="mono">R2</td><td>Backtest leakage inflating results</td><td class="down">Severe</td><td>Leakage checklist (10.2); live paper trading in Phase 5</td></tr>
+              <tr><td class="mono">R3</td><td>Entity resolution errors injecting label noise</td><td>Moderate</td><td>Confidence thresholds; hand-labelled eval set; tier-1 filings bypass the problem</td></tr>
+              <tr><td class="mono">R4</td><td>Regime dependence — signal works only in one market state</td><td>Moderate</td><td>Report IC spread across folds, not just the mean</td></tr>
+              <tr><td class="mono">R5</td><td>Sample size too small for M3/M4</td><td>Moderate</td><td>Ladder design; stop at the tier the data supports</td></tr>
+              <tr><td class="mono">R6</td><td>Source instability — feeds change format or block access</td><td>Low</td><td>Source abstraction layer; tier-1 official feeds are stable</td></tr>
+              <tr><td class="mono">R7</td><td>Costs eliminate a real but small edge</td><td>Moderate</td><td>Model impact and STT/brokerage explicitly before any capital decision</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><strong>On R1 specifically.</strong> The honest prior is that this system will find little or no edge in the NIFTY 50 and may find something in the small and mid-cap tail. The architecture is designed so that outcome is a finding rather than a failure: the stratified reporting in Section 11.1 tells you <em>where</em> the signal is, and the explanation-oriented product described in the prototype remains valuable even at zero predictive IC.</p>
+      </section>
+
+      <!-- ===================================================== 14 -->
+      <section id="s14">
+        <h2 class="sec"><span class="num">Section 14</span>Regulatory Position</h2>
+        <p>GeoTrade is a personal research project. Its outputs are consumed by its author and are not published, sold, or otherwise distributed. Under that construction the SEBI (Research Analysts) Regulations, 2014 and the SEBI (Investment Advisers) Regulations, 2013 are not engaged, since both are triggered by providing research or advice to <em>other persons</em>, typically for consideration.</p>
+        <p>The position changes materially if any of the following occur:</p>
+        <ul>
+          <li>Output is shown to other people as buy/sell recommendations on named securities;</li>
+          <li>Access is monetised in any form, including subscription or advertising;</li>
+          <li>The system is marketed as providing research or advisory value.</li>
+        </ul>
+        <p>Any of those steps warrants advice from a practitioner in Indian securities regulation before proceeding. Labelling output as "educational" or "for information only" is not reliably sufficient when the substance reads as a recommendation.</p>
+        <p>Two further obligations apply regardless of registration status: source terms of use must be respected when scraping or polling feeds, and nothing in this system should ingest or act upon material non-public information.</p>
+
+        <div class="callout">
+          <span class="label">Not legal advice</span>
+          <p>This section reflects a general reading and is not legal advice. Regulatory positions change; verify current SEBI requirements directly before any distribution or monetisation decision.</p>
+        </div>
+      </section>
+
+      <!-- ===================================================== refs -->
+      <section id="refs">
+        <h2 class="sec"><span class="num">Appendix A</span>References</h2>
+        <ol class="refs">
+          <li>
+            Loughran, T., &amp; McDonald, B. (2011). <span class="title">When Is a Liability Not a Liability? Textual Analysis, Dictionaries, and 10-Ks.</span> <span class="venue">The Journal of Finance</span>, 66(1), 35–65.
+            <span class="why"><b>Drives:</b> retirement of the general-purpose lexicon in favour of finance-specific word lists (§2.1, §6.2).</span>
+          </li>
+          <li>
+            Tetlock, P. C. (2007). <span class="title">Giving Content to Investor Sentiment: The Role of Media in the Stock Market.</span> <span class="venue">The Journal of Finance</span>, 62(3), 1139–1168.
+            <span class="why"><b>Drives:</b> the multi-day horizon and multi-window labelling that captures drift-then-reversal (§2.2, §8).</span>
+          </li>
+          <li>
+            Araci, D. (2019). <span class="title">FinBERT: Financial Sentiment Analysis with Pre-trained Language Models.</span> <span class="venue">arXiv preprint</span> arXiv:1908.10063.
+            <span class="why"><b>Drives:</b> the S2 sentiment tier and the embedding feature block A8 (§2.3, §6.2, §9.1).</span>
+          </li>
+          <li>
+            Ke, Z. T., Kelly, B. T., &amp; Xiu, D. (2019). <span class="title">Predicting Returns with Text Data.</span> <span class="venue">NBER Working Paper</span> No. 26186.
+            <span class="why"><b>Drives:</b> the central reframing of sentiment as return-supervised learning; the S1 tier (§2.4, §6.2).</span>
+          </li>
+          <li>
+            Sawhney, R., Agarwal, S., Wadhwa, A., &amp; Shah, R. R. (2020). <span class="title">Deep Attentive Learning for Stock Movement Prediction from Social Media Text and Company Correlations.</span> <span class="venue">Proceedings of EMNLP 2020</span>.
+            <span class="why"><b>Drives:</b> the learned propagation graph replacing hand-set sector weights (§2.5, §5.4, §9.1 M4).</span>
+          </li>
+        </ol>
+        <p style="margin-top:20px"><strong>Further reading, not load-bearing:</strong> Ding, X., Zhang, Y., Liu, T., &amp; Duan, J. (2015), <em>Deep Learning for Event-Driven Stock Prediction</em>, IJCAI — structured event tuples rather than bag-of-words. Hu, Z., Liu, W., Bian, J., Liu, X., &amp; Liu, T.-Y. (2018), <em>Listening to Chaotic Whispers</em>, WSDM — hierarchical attention over news sequences, relevant to M4.</p>
+      </section>
+
+      <!-- ===================================================== notation -->
+      <section id="notation">
+        <h2 class="sec"><span class="num">Appendix B</span>Notation</h2>
+        <div class="table-wrap">
+          <table>
+            <caption><b>Table B.1</b> — Symbols used throughout this report.</caption>
+            <thead><tr><th class="mono">Symbol</th><th>Meaning</th><th class="mono">First use</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">R<sub>i,t</sub></td><td>Simple return of security <em>i</em> on day <em>t</em></td><td class="mono">Eq. 8.1</td></tr>
+              <tr><td class="mono">R<sub>m,t</sub></td><td>Market (NIFTY 50) return on day <em>t</em></td><td class="mono">Eq. 8.2</td></tr>
+              <tr><td class="mono">α<sub>i</sub>, β<sub>i</sub></td><td>Market-model intercept and slope for security <em>i</em></td><td class="mono">Eq. 8.2</td></tr>
+              <tr><td class="mono">AR<sub>i,t</sub></td><td>Abnormal return — market-model residual</td><td class="mono">Eq. 8.3</td></tr>
+              <tr><td class="mono">CAR<sub>i</sub></td><td>Cumulative abnormal return over the event window</td><td class="mono">Eq. 8.4</td></tr>
+              <tr><td class="mono">σ<sub>AR,i</sub></td><td>Residual standard deviation from the estimation window</td><td class="mono">Eq. 8.5</td></tr>
+              <tr><td class="mono">τ<sub>i</sub></td><td>Volatility-scaled class threshold</td><td class="mono">Eq. 8.5</td></tr>
+              <tr><td class="mono">y<sub>i</sub></td><td>3-class label ∈ {−1, 0, +1}</td><td class="mono">Eq. 8.6</td></tr>
+              <tr><td class="mono">s<sub>d,i</sub></td><td>Sentiment of document <em>d</em> toward security <em>i</em></td><td class="mono">Eq. 6.3</td></tr>
+              <tr><td class="mono">S<sub>i,t</sub></td><td>Aggregated security-level sentiment at time <em>t</em></td><td class="mono">Eq. 6.3</td></tr>
+              <tr><td class="mono">sal<sub>d,i</sub></td><td>Salience of entity <em>i</em> within document <em>d</em></td><td class="mono">Eq. 5.1</td></tr>
+              <tr><td class="mono">nov<sub>d</sub></td><td>Novelty of document <em>d</em> against the trailing window</td><td class="mono">Eq. 6.2</td></tr>
+              <tr><td class="mono">w<sub>ij</sub></td><td>Propagation edge weight from security <em>i</em> to peer <em>j</em></td><td class="mono">Eq. 5.2</td></tr>
+              <tr><td class="mono">δ</td><td>Hop decay factor in the propagation graph</td><td class="mono">Eq. 5.2</td></tr>
+              <tr><td class="mono">λ</td><td>Time-decay constant in sentiment aggregation</td><td class="mono">Eq. 6.3</td></tr>
+              <tr><td class="mono">H</td><td>Prediction horizon in trading days</td><td class="mono">Eq. 8.5</td></tr>
+              <tr><td class="mono">IC<sub>t</sub></td><td>Cross-sectional rank information coefficient on day <em>t</em></td><td class="mono">Eq. 11.1</td></tr>
+              <tr><td class="mono">IR</td><td>Information ratio of the IC series</td><td class="mono">Eq. 11.2</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="footer-note">
+          <strong>GT-TDR-001 · Revision 1.0 · Draft for build.</strong><br>
+          Prepared as the design basis for the GeoTrade research system. Prices and signals produced by this system are research output, not investment advice. References in Appendix A should be verified against their publishers before citation in any formal work.
+        </p>
+      </section>
+
+    </main>
+  </div>
+</div>
