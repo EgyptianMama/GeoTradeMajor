@@ -61,17 +61,30 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   // its offline generator, so the dashboard works with the backend down.
   useEffect(() => {
     let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let warmTimer: ReturnType<typeof setTimeout> | undefined;
 
     const pull = async () => {
       const result = await fetchLiveNews(60);
       if (cancelled) return;
+
       if (!result) {
         setNewsMode('offline');
         return;
       }
-      // An empty payload means the API is reachable but every feed failed
-      // (commonly bot-filtering from a datacentre IP). Keep the offline
-      // generator running rather than showing a LIVE badge over mock rows.
+
+      // A host that spins down when idle (Render's free tier does) serves the
+      // first request from a process that has not finished its first poll.
+      // Retry quickly rather than settling into the offline generator.
+      if (result.status && result.status.warmed === false) {
+        setNewsMode('offline');
+        warmTimer = setTimeout(pull, 4000);
+        return;
+      }
+
+      // An empty payload from a warmed API means every feed failed, which
+      // usually means bot-filtering from a datacentre IP. Keep the offline
+      // generator running rather than showing LIVE over mock rows.
       marketSimulator.ingestLiveEvents(result.events);
       setNewsMode(result.events.length > 0 ? 'live' : 'degraded');
       setNewsStatus({
@@ -82,10 +95,11 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     };
 
     pull();
-    const t = setInterval(pull, SIM_CONFIG.NEWS_POLL_INTERVAL);
+    interval = setInterval(pull, SIM_CONFIG.NEWS_POLL_INTERVAL);
     return () => {
       cancelled = true;
-      clearInterval(t);
+      if (interval) clearInterval(interval);
+      if (warmTimer) clearTimeout(warmTimer);
     };
   }, []);
 

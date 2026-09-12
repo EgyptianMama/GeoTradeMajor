@@ -56,6 +56,8 @@ export function getEvents(): MarketEvent[] {
 export function getStatus() {
   return {
     events: cache.length,
+    /** False until the first poll finishes — matters on a cold start. */
+    warmed: lastPoll > 0,
     lastPoll,
     ageSeconds: lastPoll ? Math.round((Date.now() - lastPoll) / 1000) : null,
     feeds: FEEDS.length,

@@ -40,7 +40,9 @@ app.get('/api/health', (_req, res) => {
   const feedsUp = s.feeds - s.errors.length;
   res.json({
     ok: true,
-    state: s.events > 0 ? 'live' : 'degraded',
+    // A free-tier instance that just woke has not polled yet; that is
+    // 'warming', not 'degraded', and the frontend retries fast on it.
+    state: !s.warmed ? 'warming' : s.events > 0 ? 'live' : 'degraded',
     events: s.events,
     feedsUp,
     feedsTotal: s.feeds,

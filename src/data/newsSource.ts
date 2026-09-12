@@ -13,6 +13,7 @@ export interface NewsFetchResult {
   events: MarketEvent[];
   status: {
     events: number;
+    warmed: boolean;
     lastPoll: number;
     ageSeconds: number | null;
     feeds: number;

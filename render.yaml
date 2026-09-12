@@ -1,12 +1,19 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+# One web service builds the Vite frontend and serves it alongside the
+# news API from a single Node process, so there is no CORS or proxy config.
 services:
   - type: web
     name: geotrade
     runtime: node
     plan: free
-    region: singapore          # closest to the Indian publishers we poll
+    # Singapore is the closest Render region to the Indian publishers we poll.
+    # If the free plan rejects it, change to: oregon
+    region: singapore
+    branch: main
     buildCommand: npm ci && npm run build
     startCommand: npx tsx server/index.ts
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
